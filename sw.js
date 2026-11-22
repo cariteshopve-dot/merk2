@@ -1,6 +1,6 @@
 // Merk2: guarda la app en el teléfono para usarla sin internet.
 // Al publicar cambios, sube VERSION para que el teléfono descargue la versión nueva.
-const VERSION='merk2-v2';
+const VERSION='merk2-v3';
 const FILES=["./","index.html","manifest.webmanifest","icons/apple-touch-icon.png","icons/favicon.png","icons/icon-192.png","icons/icon-512.png","icons/maskable-512.png"];
 self.addEventListener('install',e=>{
   e.waitUntil(caches.open(VERSION).then(c=>c.addAll(FILES)).then(()=>self.skipWaiting()));

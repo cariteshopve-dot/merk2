@@ -70,7 +70,10 @@ li:last-child{border-bottom:0}
 .empty{padding:22px 14px;color:var(--muted);text-align:center;font-size:.9rem}
 .confirm{display:flex;gap:8px;align-items:center;font-size:.8rem}
 .confirm .danger{background:var(--danger);color:#fff;padding:8px 12px;font-size:.8rem}
-.item{cursor:pointer}
+.item{cursor:pointer;grid-template-columns:auto 1fr auto auto}
+.drag{touch-action:none;cursor:grab;color:var(--muted);font-size:1.2rem;line-height:1;padding:8px 4px;margin:-8px 0 -8px -6px;user-select:none;-webkit-user-select:none}
+li.dragging{position:relative;z-index:3;background:var(--paper);box-shadow:0 6px 20px rgba(0,0,0,.18);border-radius:10px;opacity:.95}
+li.dragging .drag{cursor:grabbing;color:var(--accent)}
 .ed{background:transparent;color:var(--muted);padding:6px 8px;font-size:1rem;line-height:1}
 li.editing{display:grid;grid-template-columns:1fr 1fr;gap:10px;background:color-mix(in srgb,var(--accent) 6%,transparent)}
 li.editing .full{grid-column:1/-1}
@@ -141,7 +144,7 @@ $('list').addEventListener('click',e=>{
   if(del){state.items=state.items.filter(i=>i.id!=del.dataset.del);if(editing==del.dataset.del)editing=null;save();render();return;}
   if(e.target.closest('[data-cancel]')){editing=null;render();return;}
   if(e.target.closest('[data-save]')){saveEdit();return;}
-  if(e.target.closest('li.editing'))return;
+  if(e.target.closest('li.editing')||e.target.closest('[data-drag]'))return;
   const it=e.target.closest('[data-edit]');
   if(it){editing=it.dataset.edit;render();const n=document.querySelector('.e-name');if(n){n.focus();n.select();}}
 });
@@ -150,6 +153,43 @@ $('list').addEventListener('keydown',e=>{
   if(e.key==='Enter'){e.preventDefault();saveEdit();}
   if(e.key==='Escape'){editing=null;render();}
 });
+
+// Arrastrar para reordenar (dedo o mouse) usando la manija ⠿
+let drag=null;
+$('list').addEventListener('pointerdown',e=>{
+  const h=e.target.closest('[data-drag]'); if(!h)return;
+  e.preventDefault();
+  const li=h.closest('li');
+  drag={li,id:e.pointerId,startY:e.clientY};
+  h.setPointerCapture(e.pointerId);
+  li.classList.add('dragging');
+  if(navigator.vibrate)navigator.vibrate(10);
+});
+$('list').addEventListener('pointermove',e=>{
+  if(!drag||e.pointerId!==drag.id)return;
+  const li=drag.li;
+  li.style.transform='';
+  const others=[...$('list').querySelectorAll('li.item')].filter(x=>x!==li);
+  for(const o of others){
+    const r=o.getBoundingClientRect(), mid=r.top+r.height/2;
+    const before=li.compareDocumentPosition(o)&Node.DOCUMENT_POSITION_PRECEDING;
+    if(before&&e.clientY<mid){o.before(li);break;}
+    if(!before&&e.clientY>mid){o.after(li);}
+  }
+  const r=li.getBoundingClientRect();
+  li.style.transform=`translateY(${e.clientY-(r.top+r.height/2)}px)`;
+});
+function endDrag(e){
+  if(!drag||e.pointerId!==drag.id)return;
+  drag.li.classList.remove('dragging');drag.li.style.transform='';
+  const order=[...$('list').querySelectorAll('li.item')].map(x=>x.dataset.edit);
+  const byId=Object.fromEntries(state.items.map(i=>[i.id,i]));
+  const next=order.map(id=>byId[id]).filter(Boolean);
+  if(next.length===state.items.length)state.items=next;
+  drag=null;save();render();
+}
+$('list').addEventListener('pointerup',endDrag);
+$('list').addEventListener('pointercancel',endDrag);
 
 function saveEdit(){
   const li=document.querySelector('li.editing'); if(!li)return;
@@ -192,7 +232,7 @@ function render(){
       <label>Precio unit. ($)<input class="e-price" type="number" inputmode="decimal" step="0.01" min="0" value="${i.price}"></label>
       <div class="acts full"><button class="primary" type="button" data-save>Guardar</button><button class="ghost" type="button" data-cancel>Cancelar</button></div>
     </li>`:`
-    <li class="item" data-edit="${i.id}"><div style="min-width:0"><div class="pn">${esc(i.name)}</div><div class="pd num">${fmt(i.qty,i.qty%1?2:0)} × $${fmt(i.price)}</div></div>
+    <li class="item" data-edit="${i.id}"><span class="drag" data-drag aria-label="Mover ${esc(i.name)}" title="Arrastra para mover">⠿</span><div style="min-width:0"><div class="pn">${esc(i.name)}</div><div class="pd num">${fmt(i.qty,i.qty%1?2:0)} × $${fmt(i.price)}</div></div>
     <div class="pt num">$${fmt(i.qty*i.price)}</div>
     <div style="display:flex"><button class="ed" type="button" aria-label="Editar ${esc(i.name)}">✎</button><button class="x" data-del="${i.id}" aria-label="Eliminar ${esc(i.name)}">×</button></div></li>`).join('')
     :'<li class="empty" style="display:block">Agrega tu primer producto arriba.</li>';
