@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Merk2</title>
+<meta name="theme-color" content="#0f7a4a">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/favicon.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Merk2">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: ticket de caja — totales fijos arriba, lista tipo recibo debajo */
+:root{
+  --bg:#f3f5f2; --paper:#ffffff; --ink:#18201b; --muted:#66706a; --line:#dfe4de;
+  --accent:#0f7a4a; --accent-ink:#ffffff; --bs:#1f4fa8; --usdt:#b07a00; --danger:#b4372b;
+  --display:"Archivo",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#111613; --paper:#1a211c; --ink:#e8eee9; --muted:#9aa59e; --line:#2c3630;
+  --accent:#3fbf80; --accent-ink:#08130d; --bs:#7fa6f0; --usdt:#e8b740; --danger:#f07a6e; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#111613; --paper:#1a211c; --ink:#e8eee9; --muted:#9aa59e; --line:#2c3630;
+  --accent:#3fbf80; --accent-ink:#08130d; --bs:#7fa6f0; --usdt:#e8b740; --danger:#f07a6e; color-scheme:dark}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--display);font-size:14px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-top:calc(16px + env(safe-area-inset-top,0px));padding-bottom:calc(40px + env(safe-area-inset-bottom,0px))}
+.wrap{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+h1{font-size:1.35rem;font-weight:800;margin:0;letter-spacing:-.01em}
+.sub{color:var(--muted);font-size:.8rem;margin-top:2px}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.totals{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px;
+  position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
+.big{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.big .lbl{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.big .val{font-size:2rem;font-weight:600;color:var(--accent)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cell{border-top:1px dashed var(--line);padding-top:10px;min-width:0}
+.cell .lbl{font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.cell .val{font-size:1.1rem;font-weight:600;overflow-wrap:anywhere}
+.cell.bs .val{color:var(--bs)} .cell.usdt .val{color:var(--usdt)}
+.gap{font-size:.78rem;color:var(--muted)} .gap b{color:var(--danger);font-weight:600}
+.rates{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+label{display:flex;flex-direction:column;gap:4px;font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+input{font:inherit;font-family:var(--mono);font-size:1rem;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%;min-width:0;text-transform:none;letter-spacing:0}
+input:focus{outline:2px solid var(--accent);outline-offset:1px}
+#name{font-family:var(--display)}
+.add{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:14px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.add .full{grid-column:1/-1}
+button{font:inherit;font-weight:700;border:0;border-radius:10px;padding:12px;cursor:pointer}
+.primary{background:var(--accent);color:var(--accent-ink);font-size:1rem}
+.ghost{background:transparent;color:var(--muted);border:1px solid var(--line);font-size:.8rem;padding:8px 12px}
+button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.listhead{display:flex;justify-content:space-between;align-items:center}
+.listhead h2{font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0}
+ul{list-style:none;margin:0;padding:0;background:var(--paper);border:1px solid var(--line);border-radius:14px}
+li{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:12px 14px;border-bottom:1px dashed var(--line)}
+li:last-child{border-bottom:0}
+.pn{font-weight:700;min-width:0;overflow-wrap:anywhere}
+.pd{font-size:.78rem;color:var(--muted)}
+.pt{font-weight:600}
+.x{background:transparent;color:var(--danger);padding:6px 8px;font-size:1.1rem;line-height:1}
+.empty{padding:22px 14px;color:var(--muted);text-align:center;font-size:.9rem}
+.confirm{display:flex;gap:8px;align-items:center;font-size:.8rem}
+.confirm .danger{background:var(--danger);color:#fff;padding:8px 12px;font-size:.8rem}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div>
+    <h1>Merk2</h1>
+    <div class="sub">Actualiza las tasas del día antes de sumar.</div>
+  </div>
+
+  <section class="totals" aria-live="polite">
+    <div class="big"><span class="lbl">Total USD</span><span class="val num" id="tUsd">$0,00</span></div>
+    <div class="row">
+      <div class="cell bs"><div class="lbl">En Bs (BCV)</div><div class="val num" id="tBs">Bs 0,00</div></div>
+      <div class="cell usdt"><div class="lbl">Esos Bs en USDT</div><div class="val num" id="tUsdt">0,00 USDT</div></div>
+    </div>
+    <div class="gap" id="gap"></div>
+  </section>
+
+  <div class="rates">
+    <label for="bcv">Tasa BCV (Bs/$)<input id="bcv" type="number" inputmode="decimal" step="0.01" min="0"></label>
+    <label for="bin">Tasa Binance (Bs/USDT)<input id="bin" type="number" inputmode="decimal" step="0.01" min="0"></label>
+  </div>
+
+  <form class="add" id="form" autocomplete="off">
+    <label class="full" for="name">Producto<input id="name" placeholder="Ej: Harina PAN" required></label>
+    <label for="qty">Cantidad<input id="qty" type="number" inputmode="decimal" step="any" min="0" value="1" required></label>
+    <label for="price">Precio unit. ($)<input id="price" type="number" inputmode="decimal" step="0.01" min="0" placeholder="0.00" required></label>
+    <button class="primary full" type="submit">Agregar</button>
+  </form>
+
+  <div class="listhead">
+    <h2 id="count">Productos</h2>
+    <div id="clearBox"><button class="ghost" id="clear" type="button">Vaciar lista</button></div>
+  </div>
+  <ul id="list"></ul>
+</div>
+
+<script>
+const KEY='mercado-v1';
+const $=id=>document.getElementById(id);
+let state={bcv:'',bin:'',items:[]};
+try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&Array.isArray(s.items))state=s;}catch(e){}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}};
+const fmt=(n,d=2)=>n.toLocaleString('es-VE',{minimumFractionDigits:d,maximumFractionDigits:d});
+
+$('bcv').value=state.bcv; $('bin').value=state.bin;
+['bcv','bin'].forEach(k=>$(k).addEventListener('input',e=>{state[k]=e.target.value;save();render()}));
+
+$('form').addEventListener('submit',e=>{
+  e.preventDefault();
+  const name=$('name').value.trim(), qty=parseFloat($('qty').value), price=parseFloat($('price').value);
+  if(!name||!(qty>0)||!(price>=0))return;
+  state.items.unshift({id:Date.now(),name,qty,price});
+  save();render();
+  $('name').value='';$('price').value='';$('qty').value='1';$('name').focus();
+});
+
+$('list').addEventListener('click',e=>{
+  const b=e.target.closest('[data-del]'); if(!b)return;
+  state.items=state.items.filter(i=>i.id!=b.dataset.del);save();render();
+});
+
+function resetClear(){$('clearBox').innerHTML='<button class="ghost" id="clear" type="button">Vaciar lista</button>';$('clear').onclick=askClear;}
+function askClear(){
+  if(!state.items.length)return;
+  $('clearBox').innerHTML='<span class="confirm">¿Seguro? <button class="danger" id="yes" type="button">Vaciar</button><button class="ghost" id="no" type="button">No</button></span>';
+  $('yes').onclick=()=>{state.items=[];save();render();resetClear()};
+  $('no').onclick=resetClear;
+}
+$('clear').onclick=askClear;
+
+function esc(s){return s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+
+function render(){
+  const usd=state.items.reduce((a,i)=>a+i.qty*i.price,0);
+  const bcv=parseFloat(state.bcv)||0, bin=parseFloat(state.bin)||0;
+  const bs=usd*bcv, usdt=bin>0?bs/bin:0;
+  $('tUsd').textContent='$'+fmt(usd);
+  $('tBs').textContent='Bs '+fmt(bs);
+  $('tUsdt').textContent=bin>0?fmt(usdt)+' USDT':'— USDT';
+  if(bcv>0&&bin>0&&usd>0){
+    const pct=(1-bcv/bin)*100;
+    $('gap').innerHTML='Pagando en Bs gastas el equivalente a <b>'+fmt(usdt)+' USDT</b> en vez de $'+fmt(usd)+' · brecha '+fmt(pct,1)+'%';
+  }else{$('gap').textContent=bcv>0&&bin>0?'':'Coloca ambas tasas para ver la conversión.'}
+  $('count').textContent=state.items.length?`Productos (${state.items.length})`:'Productos';
+  $('list').innerHTML=state.items.length?state.items.map(i=>`
+    <li><div style="min-width:0"><div class="pn">${esc(i.name)}</div><div class="pd num">${fmt(i.qty,i.qty%1?2:0)} × $${fmt(i.price)}</div></div>
+    <div class="pt num">$${fmt(i.qty*i.price)}</div>
+    <button class="x" data-del="${i.id}" aria-label="Eliminar ${esc(i.name)}">×</button></li>`).join('')
+    :'<li class="empty" style="display:block">Agrega tu primer producto arriba.</li>';
+}
+render();
+
+// Instalable y sin internet
+if('serviceWorker' in navigator){addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))}
+</script>
+</body>
+</html>
