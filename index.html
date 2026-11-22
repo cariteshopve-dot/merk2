@@ -70,6 +70,13 @@ li:last-child{border-bottom:0}
 .empty{padding:22px 14px;color:var(--muted);text-align:center;font-size:.9rem}
 .confirm{display:flex;gap:8px;align-items:center;font-size:.8rem}
 .confirm .danger{background:var(--danger);color:#fff;padding:8px 12px;font-size:.8rem}
+.item{cursor:pointer}
+.ed{background:transparent;color:var(--muted);padding:6px 8px;font-size:1rem;line-height:1}
+li.editing{display:grid;grid-template-columns:1fr 1fr;gap:10px;background:color-mix(in srgb,var(--accent) 6%,transparent)}
+li.editing .full{grid-column:1/-1}
+li.editing .acts{display:flex;gap:8px}
+li.editing .acts button{flex:1}
+li.editing .e-name{font-family:var(--display)}
 </style>
 </head>
 <body>
@@ -127,10 +134,33 @@ $('form').addEventListener('submit',e=>{
   $('name').value='';$('price').value='';$('qty').value='1';$('name').focus();
 });
 
+let editing=null; // id del producto que se está editando
+
 $('list').addEventListener('click',e=>{
-  const b=e.target.closest('[data-del]'); if(!b)return;
-  state.items=state.items.filter(i=>i.id!=b.dataset.del);save();render();
+  const del=e.target.closest('[data-del]');
+  if(del){state.items=state.items.filter(i=>i.id!=del.dataset.del);if(editing==del.dataset.del)editing=null;save();render();return;}
+  if(e.target.closest('[data-cancel]')){editing=null;render();return;}
+  if(e.target.closest('[data-save]')){saveEdit();return;}
+  if(e.target.closest('li.editing'))return;
+  const it=e.target.closest('[data-edit]');
+  if(it){editing=it.dataset.edit;render();const n=document.querySelector('.e-name');if(n){n.focus();n.select();}}
 });
+$('list').addEventListener('keydown',e=>{
+  if(!e.target.closest('li.editing'))return;
+  if(e.key==='Enter'){e.preventDefault();saveEdit();}
+  if(e.key==='Escape'){editing=null;render();}
+});
+
+function saveEdit(){
+  const li=document.querySelector('li.editing'); if(!li)return;
+  const name=li.querySelector('.e-name').value.trim(),
+        qty=parseFloat(li.querySelector('.e-qty').value),
+        price=parseFloat(li.querySelector('.e-price').value);
+  if(!name||!(qty>0)||!(price>=0)){li.querySelector(!name?'.e-name':!(qty>0)?'.e-qty':'.e-price').focus();return;}
+  const it=state.items.find(i=>i.id==editing);
+  if(it){it.name=name;it.qty=qty;it.price=price;}
+  editing=null;save();render();
+}
 
 function resetClear(){$('clearBox').innerHTML='<button class="ghost" id="clear" type="button">Vaciar lista</button>';$('clear').onclick=askClear;}
 function askClear(){
@@ -155,10 +185,16 @@ function render(){
     $('gap').innerHTML='Pagando en Bs gastas el equivalente a <b>'+fmt(usdt)+' USDT</b> en vez de $'+fmt(usd)+' · brecha '+fmt(pct,1)+'%';
   }else{$('gap').textContent=bcv>0&&bin>0?'':'Coloca ambas tasas para ver la conversión.'}
   $('count').textContent=state.items.length?`Productos (${state.items.length})`:'Productos';
-  $('list').innerHTML=state.items.length?state.items.map(i=>`
-    <li><div style="min-width:0"><div class="pn">${esc(i.name)}</div><div class="pd num">${fmt(i.qty,i.qty%1?2:0)} × $${fmt(i.price)}</div></div>
+  $('list').innerHTML=state.items.length?state.items.map(i=>i.id==editing?`
+    <li class="editing">
+      <label class="full">Producto<input class="e-name" value="${esc(i.name)}"></label>
+      <label>Cantidad<input class="e-qty" type="number" inputmode="decimal" step="any" min="0" value="${i.qty}"></label>
+      <label>Precio unit. ($)<input class="e-price" type="number" inputmode="decimal" step="0.01" min="0" value="${i.price}"></label>
+      <div class="acts full"><button class="primary" type="button" data-save>Guardar</button><button class="ghost" type="button" data-cancel>Cancelar</button></div>
+    </li>`:`
+    <li class="item" data-edit="${i.id}"><div style="min-width:0"><div class="pn">${esc(i.name)}</div><div class="pd num">${fmt(i.qty,i.qty%1?2:0)} × $${fmt(i.price)}</div></div>
     <div class="pt num">$${fmt(i.qty*i.price)}</div>
-    <button class="x" data-del="${i.id}" aria-label="Eliminar ${esc(i.name)}">×</button></li>`).join('')
+    <div style="display:flex"><button class="ed" type="button" aria-label="Editar ${esc(i.name)}">✎</button><button class="x" data-del="${i.id}" aria-label="Eliminar ${esc(i.name)}">×</button></div></li>`).join('')
     :'<li class="empty" style="display:block">Agrega tu primer producto arriba.</li>';
 }
 render();
